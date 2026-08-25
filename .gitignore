@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+.env
+logs/
+feedback/feedback.csv
+.streamlit/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+.venv312/
+venv/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Feedback / generated data
+feedback/
+.streamlit/
+
+# IDE
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+

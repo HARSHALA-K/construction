@@ -1,0 +1,8 @@
+streamlit
+python-dotenv
+openai-whisper
+sentence-transformers
+qdrant-client
+groq
+torch
+pandas
