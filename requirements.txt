@@ -11,4 +11,5 @@ crewai
 autogen-agentchat
 autogen-ext
 mcp
+ddgs
 httpx
