@@ -2,6 +2,7 @@ streamlit
 python-dotenv
 openai-whisper
 sentence-transformers
+langchain_text_splitters
 qdrant-client
 groq
 torch
