@@ -6,3 +6,9 @@ qdrant-client
 groq
 torch
 pandas
+python-dotenv
+crewai
+autogen-agentchat
+autogen-ext
+mcp
+httpx

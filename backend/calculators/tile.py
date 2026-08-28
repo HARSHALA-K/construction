@@ -21,8 +21,10 @@ def calculate_tiles(
 
     return math.ceil(tiles)
 
-def extract_tile_inputs(prompt):
+import re
 
+
+def extract_tile_inputs(prompt):
     prompt = prompt.lower()
 
     result = {
@@ -32,46 +34,74 @@ def extract_tile_inputs(prompt):
         "tile_width": None
     }
 
-    # --------------------------------------------------------
-    # Room dimensions
+    # ---------------------------------------------------------
+    # ROOM DIMENSIONS
     # Examples:
-    # 20x20 room
-    # 20 x 20 ft room
-    # 20*20 room
-    # --------------------------------------------------------
+    # 20 x 15 ft room
+    # 20 × 15 ft room
+    # 20x15 room
+    # ---------------------------------------------------------
 
     room_match = re.search(
-        r'(\d+(?:\.\d+)?)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(ft|feet)?\s*room',
-        prompt.lower()
+        r'(\d+(?:\.\d+)?)\s*[x×*]\s*'
+        r'(\d+(?:\.\d+)?)\s*'
+        r'(?:ft|feet)?\s*room',
+        prompt
     )
 
     if room_match:
         result["room_length"] = float(room_match.group(1))
         result["room_width"] = float(room_match.group(2))
 
-    # --------------------------------------------------------
-    # Tile dimensions
-    #
-    # Supports:
-    # 600x600
-    # 600 x 600
-    # 600*600
-    # 600 * 600 mm
-    # 600mm x 600mm
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
+    # TILE DIMENSIONS
+    # Examples:
+    # 600 x 600 mm tiles
+    # 600 × 600 mm tiles
+    # 600x600mm
+    # ---------------------------------------------------------
 
     tile_match = re.search(
-        r'(\d+(?:\.\d+)?)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(mm|cm)?',
-        prompt.lower()
+        r'(\d+(?:\.\d+)?)\s*[x×*]\s*'
+        r'(\d+(?:\.\d+)?)\s*'
+        r'(?:mm|millimeter|millimetre|cm)?\s*tiles?',
+        prompt
     )
 
     if tile_match:
         result["tile_length"] = float(tile_match.group(1))
         result["tile_width"] = float(tile_match.group(2))
 
-    # --------------------------------------------------------
-    # Missing fields
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
+    # FALLBACK TILE EXTRACTION
+    # Handles cases where "tiles" isn't immediately after
+    # the dimensions.
+    # ---------------------------------------------------------
+
+    if (
+        result["tile_length"] is None
+        or result["tile_width"] is None
+    ):
+        tile_match = re.search(
+            r'(\d+(?:\.\d+)?)\s*[x×*]\s*'
+            r'(\d+(?:\.\d+)?)\s*'
+            r'(?:mm|millimeter|millimetre|cm)?',
+            prompt
+        )
+
+        if tile_match:
+            a = float(tile_match.group(1))
+            b = float(tile_match.group(2))
+
+            # Don't accidentally use the room dimensions
+            # as the tile dimensions.
+            if a != result["room_length"] or b != result["room_width"]:
+                result["tile_length"] = a
+                result["tile_width"] = b
+
+    # ---------------------------------------------------------
+    # MISSING FIELDS
+    # ---------------------------------------------------------
 
     missing = [
         key

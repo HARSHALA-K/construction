@@ -62,7 +62,7 @@ def answer_question(
                 
                 for item in results:
                     text_content = item.get("text", "")
-                if text_content not in context_chunks:
+                    if text_content not in context_chunks:
                         context_chunks.append(text_content)
                         source_metadata.append(item)
 

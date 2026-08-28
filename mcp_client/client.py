@@ -45,12 +45,16 @@ def get_tile_estimate(
 def get_material_estimate(
         length,
         width,
-        thickness
+        thickness,
+        material_type,
+        calculation_type
 ):
     response = estimate_materials(
         length=length,
         width=width,
-        thickness=thickness
+        thickness=thickness,
+        material_type=material_type,
+        calculation_type=calculation_type
     )
 
     return response

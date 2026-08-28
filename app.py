@@ -115,7 +115,7 @@ print("===============================")
 # ==========================================
 st.sidebar.image("assets/logo.png", use_container_width=True)
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Chat", "Calculator", "Feedback", "About"])
+page = st.sidebar.radio("Go to", ["Chat", "Calculator", "Agents", "Feedback", "About"])
 
 # ==========================================
 # Page: Chat
@@ -227,19 +227,22 @@ if prompt := st.chat_input("Ask a construction question..."):
 
                         if intent == "tile":
 
-                            # If this is a new tile request, start with empty data.
-                            # If this is a follow-up, keep the previous data.
+                            # -------------------------------------------------
+                            # Keep previous data if this is a follow-up
+                            # -------------------------------------------------
+
                             if pending_intent == "tile":
                                 data = pending_data.copy()
                             else:
                                 data = {}
 
+                            # -------------------------------------------------
+                            # Extract inputs using the existing tile extractor
+                            # -------------------------------------------------
+
                             new_data = extract_tile_inputs(prompt)
 
-                            print(
-                                "DEBUG TILE EXTRACTED DATA:",
-                                new_data
-                            )
+                            print("DEBUG TILE EXTRACTED DATA:", new_data)
 
                             for key, value in new_data.items():
 
@@ -250,44 +253,10 @@ if prompt := st.chat_input("Ask a construction question..."):
 
                                     data[key] = value
 
-                            print(
-                                "DEBUG TILE DATA AFTER EXTRACTION:",
-                                data
-                            )
+                            print("DEBUG TILE DATA AFTER EXTRACTION:", data)
 
                             # -------------------------------------------------
-                            # TILE FALLBACK
-                            # Handles:
-                            # "600x600"
-                            # "600 x 600 mm"
-                            # when tile.py extractor does not catch it.
-                            # -------------------------------------------------
-
-                            if (
-                                data.get("tile_length") is None
-                                or data.get("tile_width") is None
-                            ):
-
-                                import re
-
-                                tile_match = re.search(
-                                    r'(\d+(?:\.\d+)?)\s*[x*]\s*'
-                                    r'(\d+(?:\.\d+)?)\s*(mm|cm)?',
-                                    prompt.lower()
-                                )
-
-                                if tile_match:
-
-                                    data["tile_length"] = float(
-                                        tile_match.group(1)
-                                    )
-
-                                    data["tile_width"] = float(
-                                        tile_match.group(2)
-                                    )
-
-                            # -------------------------------------------------
-                            # Check what is still missing
+                            # Check missing values
                             # -------------------------------------------------
 
                             missing = []
@@ -304,18 +273,11 @@ if prompt := st.chat_input("Ask a construction question..."):
                             if data.get("tile_width") is None:
                                 missing.append("tile width")
 
-                            print(
-                                "DEBUG TILE FINAL DATA:",
-                                data
-                            )
-
-                            print(
-                                "DEBUG TILE MISSING:",
-                                missing
-                            )
+                            print("DEBUG TILE FINAL DATA:", data)
+                            print("DEBUG TILE MISSING:", missing)
 
                             # -------------------------------------------------
-                            # If everything is available → CALCULATE
+                            # Calculate only when ALL inputs exist
                             # -------------------------------------------------
 
                             if not missing:
@@ -328,22 +290,22 @@ if prompt := st.chat_input("Ask a construction question..."):
                                 )
 
                                 answer = f"""
-### Tile Estimation
+                        ### Tile Estimation
 
-For a **{data["room_length"]:.0f} × {data["room_width"]:.0f} ft room**
-using **{data["tile_length"]:.0f} × {data["tile_width"]:.0f} mm tiles**:
+                        For a **{data["room_length"]:.0f} × {data["room_width"]:.0f} ft room**
+                        using **{data["tile_length"]:.0f} × {data["tile_width"]:.0f} mm tiles**:
 
-**Estimated tiles required: {result}**
+                        **Estimated tiles required: {result}**
 
-Includes **10% wastage allowance**.
-"""
+                        Includes **10% wastage allowance**.
+                        """
 
                                 # Clear calculator conversation
                                 st.session_state.pending_intent = None
                                 st.session_state.pending_data = {}
 
                             # -------------------------------------------------
-                            # Otherwise ask for missing information
+                            # Ask for missing information
                             # -------------------------------------------------
 
                             else:
@@ -579,7 +541,7 @@ Estimated material requirement:
 
                        
                         else:
-                            web_results = asyncio.run(route_query(prompt))
+                            web_results = []
                             answer, sources = answer_question(
                                 prompt,
                                 backend="qdrant",
@@ -755,6 +717,63 @@ elif page == "Calculator":
                 st.success(
                     f"Estimated Interior Cost: ₹{cost:,.0f}"
                 )
+
+#page:agents
+elif page == "Agents":
+    st.title("🤖 AI Agents")
+
+    agent_type = st.selectbox(
+        "Choose Agent Framework",
+        ["CrewAI", "AutoGen"]
+    )
+
+    prompt = st.text_area(
+        "Enter a construction question",
+        placeholder="How many tiles are needed for a 10x12 ft room using 600x600 mm tiles?"
+    )
+
+    if st.button("Run Agent") and prompt:
+        # call corresponding agent
+         with st.spinner("Agent is thinking..."):
+
+            try:
+
+                # ==========================================
+                # CrewAI
+                # ==========================================
+
+                if agent_type == "CrewAI":
+
+                    from backend.agents.crewai_agent import run_construction_crew
+
+                    result = run_construction_crew(prompt)
+
+                    st.subheader("CrewAI Response")
+
+                    st.markdown(result)
+
+                # ==========================================
+                # AutoGen
+                # ==========================================
+
+                elif agent_type == "AutoGen":
+
+                    from backend.agents.autogen_agent import run_autogen_agent
+                    answer = run_autogen_agent(
+                        prompt
+                    )
+                    st.subheader("🤖 AutoGen Response")
+
+                    st.markdown(answer)
+
+            except Exception as e:
+
+                st.error("Agent execution failed.")
+
+                st.code(
+                    str(e)
+                )
+        
 
 # ==========================================
 # Page: Feedback

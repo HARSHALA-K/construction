@@ -14,23 +14,28 @@ def calculate_tiles_tool(
 ):
 
     return tile_tool(
-        room_length,
-        room_width,
-        tile_length,
-        tile_width
+        room_length=room_length,
+        room_width=room_width,
+        tile_length=tile_length,
+        tile_width=tile_width
     ) 
 
 
 @mcp.tool()
 def estimate_materials(
-        length: float,
-        width: float,
-        thickness: float
+    length: float,
+    width: float,
+    thickness: float,
+    material_type: str,
+    calculation_type: str
 ):
+    
     return material_tool(
-        length,
-        width,
-        thickness
+        length=length,
+        width=width,
+        thickness=thickness,
+        material_type=material_type,
+        calculation_type=calculation_type
     )
 
 @mcp.tool()
@@ -39,8 +44,8 @@ def estimate_project(
         cost_per_sqft: float
 ):
     return project_tool(
-        area_sqft,
-        cost_per_sqft
+        area_sqft=area_sqft,
+        cost_per_sqft=cost_per_sqft
     )
 
 @mcp.tool()
@@ -48,7 +53,7 @@ def estimate_interior(
         area_sqft: float
 ):
     return estimate_interior_tool(
-        area_sqft
+        area_sqft=area_sqft
     )
 
 if __name__ == "__main__":
