@@ -70,6 +70,11 @@ def answer_question(
                 ]
 
                 return valid_parts if valid_parts else [query.strip()]
+            search_queries = split_search_queries(query)
+
+            logger.info(
+                f"Generated search queries: {search_queries}"
+            )
 
             # Loop through all extracted queries to gather complete context
             for sub_query in search_queries:
@@ -121,8 +126,7 @@ def answer_question(
         answer = generate_answer(
             question=query,
             context=context,
-            history=history_text, 
-            search_queries = split_search_queries(query)
+            history=history_text
         )
         
         logger.info("Successfully generated answer.")
