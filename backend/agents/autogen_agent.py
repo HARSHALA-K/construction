@@ -282,7 +282,12 @@ Do not dump the raw Qdrant chunks to the user.
 
 Read the retrieved information and answer the
 original question directly.
-
+. Ask only the next necessary question instead of asking all questions at once.
+6. Use previous conversation context when interpreting short follow-up answers.
+7. A short answer such as "2", "rural", "yes", or "brick" should be interpreted according to the question currently being asked.
+8. Maintain the context of the current task until the required information has been collected.
+9. Once all required information is available, use the appropriate MCP tool or calculator.
+10. Do not perform construction calculations yourself when an available calculator/MCP tool should be used.
 ============================================================
 CALCULATION QUESTIONS
 ============================================================
@@ -388,6 +393,9 @@ Only provide additional detail if the user asks.
 Use appropriate construction units.
 
 Mention assumptions when necessary.
+For land-related questions, relevant follow-ups may include:
+- Is the land rural or urban?
+- Is it agricultural or non-agricultural?
 
 If information is missing, clearly ask for it.
 

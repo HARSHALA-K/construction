@@ -4,6 +4,7 @@ from .embedding import embed_text
 from .qdrant_db import search as qdrant_search
 from .llm import generate_answer
 from .router import route_query
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -42,17 +43,33 @@ def answer_question(
             search_queries = []
             
             # Simple heuristic or LLM check: If the paragraph contains multiple requests
-            if any(word in query.lower() for word in ["and", ",", "also", "addition"]):
-                # Use your routing/LLM logic to split into standalone search strings
-                # If route_query doesn't split, fallback to treating the query as a list
-                try:
-                    # Modify your route_query or a helper to return a list of sub-queries
-                    # For now, we fallback to running the main query if splitting fails
-                    search_queries = [query] 
-                except Exception:
-                    search_queries = [query]
-            else:
-                search_queries = [query]
+
+            def split_search_queries(query: str) -> List[str]:
+                """
+                Split a multi-part user query into independent search queries.
+                Keeps the original query when no reliable split is found.
+                """
+
+                # Split on common conjunctions
+                parts = re.split(
+                    r"\s+(?:and|also|additionally|plus)\s+|[,;]",
+                    query,
+                    flags=re.IGNORECASE
+                )
+
+                # Clean empty pieces
+                parts = [part.strip() for part in parts if part.strip()]
+
+                # Avoid creating bad searches from very small fragments
+                if len(parts) <= 1:
+                    return [query.strip()]
+
+                valid_parts = [
+                    part for part in parts
+                    if len(part.split()) >= 3
+                ]
+
+                return valid_parts if valid_parts else [query.strip()]
 
             # Loop through all extracted queries to gather complete context
             for sub_query in search_queries:
@@ -104,7 +121,8 @@ def answer_question(
         answer = generate_answer(
             question=query,
             context=context,
-            history=history_text
+            history=history_text, 
+            search_queries = split_search_queries(query)
         )
         
         logger.info("Successfully generated answer.")

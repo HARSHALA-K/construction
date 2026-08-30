@@ -141,8 +141,16 @@ for msg in st.session_state.messages:
                     st.divider()
 
     # Chat Input
-if prompt := st.chat_input("Ask a construction question..."):
+with st.form("chat_form", clear_on_submit=True):
+    prompt = st.text_area(
+        "Ask a construction question...",
+        height=100,
+        placeholder="Type your construction question here..."
+    )
 
+    submitted = st.form_submit_button("Send")
+
+if submitted and prompt.strip():
         # -----------------------------------------
         # Add user message to chat history
         # -----------------------------------------
@@ -338,6 +346,41 @@ if prompt := st.chat_input("Ask a construction question..."):
                                 "DEBUG MATERIAL EXTRACTED DATA:",
                                 new_data
                             )
+                            # -------------------------------------------------
+                            # FOLLOW-UP FALLBACK
+                            # If we are already waiting for material data
+                            #calculation_type is missing ask if its brickwork or concrete, if material_type is missing ask if its cement or sand,
+                            #and take that answer and fill in as calculation_type or material_type respectively. If length, width, are present
+                            # and thickness is the missing value,
+                            # allow the user to reply with just a number.
+                            # Example:
+                            # Assistant: "What is the thickness?"
+                            # User: "0.15"
+                            # -------------------------------------------------
+
+                            if pending_intent == "material":
+
+                                previous_data = pending_data.copy()
+
+                                thickness_missing = (
+                                    previous_data.get("length") is not None
+                                    and previous_data.get("width") is not None
+                                    and previous_data.get("thickness") is None
+                                )
+
+                                if thickness_missing:
+
+                                    import re
+
+                                    number_match = re.fullmatch(
+                                        r"\s*(\d+(?:\.\d+)?)\s*",
+                                        prompt
+                                    )
+
+                                    if number_match:
+                                        new_data["thickness"] = float(
+                                            number_match.group(1)
+                                        )
 
                             for key, value in new_data.items():
 
@@ -359,6 +402,12 @@ if prompt := st.chat_input("Ask a construction question..."):
                             if data.get("thickness") is None:
                                 missing.append("thickness")
 
+                            if data.get("material_type") is None:
+                                missing.append("material type")
+
+                            if data.get("calculation_type") is None:
+                                missing.append("calculation type")
+
                             print(
                                 "DEBUG MATERIAL FINAL DATA:",
                                 data
@@ -369,7 +418,9 @@ if prompt := st.chat_input("Ask a construction question..."):
                                 result = get_material_estimate(
                                     data["length"],
                                     data["width"],
-                                    data["thickness"]
+                                    data["thickness"],
+                                    data.get("material_type"),
+                                    data["calculation_type"]
                                 )
 
                                 answer = f"""
