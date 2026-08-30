@@ -452,24 +452,35 @@ def extract_interior_inputs(prompt):
     """
     Extract interior estimation input.
 
-    Expected:
-        area_sqft
-
-    Examples:
+    Supported:
         "Interior estimate for 1200 sqft"
         "How much for a 1500 square feet apartment?"
+
+    Important:
+        BHK numbers are NOT treated as area.
     """
 
     prompt = prompt.lower()
 
     result = {
         "area_sqft": None,
+        "bhk": None
     }
 
     # --------------------------------------------------------
-    # Explicit sqft
+    # BHK
     # --------------------------------------------------------
+    bhk_match = re.search(
+        r"\b(\d+(?:\.\d+)?)\s*bhk\b",
+        prompt
+    )
 
+    if bhk_match:
+        result["bhk"] = int(float(bhk_match.group(1)))
+
+    # --------------------------------------------------------
+    # Explicit square feet
+    # --------------------------------------------------------
     area_match = re.search(
         r"(\d+(?:\.\d+)?)\s*"
         r"(?:sq\.?\s*ft|sqft|square\s*feet|square\s*ft)",
@@ -477,27 +488,14 @@ def extract_interior_inputs(prompt):
     )
 
     if area_match:
-        result["area_sqft"] = float(
-            area_match.group(1)
-        )
-
-    # --------------------------------------------------------
-    # Fallback
-    # --------------------------------------------------------
-
-    if result["area_sqft"] is None:
-
-        numbers = _extract_numbers(prompt)
-
-        if numbers:
-            result["area_sqft"] = numbers[0]
+        result["area_sqft"] = float(area_match.group(1))
 
     # --------------------------------------------------------
     # Missing
     # --------------------------------------------------------
-
     missing = []
 
+    # Area is required for your CURRENT cost calculator
     if result["area_sqft"] is None:
         missing.append("area_sqft")
 
