@@ -57,8 +57,7 @@ def setup_logging(log_dir: str = "logs", log_file: str = "app.log"):
     """
     Sets up python logging to output to both console and a log file.
     """
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
         
     log_path = os.path.join(log_dir, log_file)
     
