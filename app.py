@@ -1,4 +1,6 @@
 import streamlit as st
+import importlib.util
+st.write("LiteLLM installed:", importlib.util.find_spec("litellm") is not None)
 import os
 import asyncio
 import pandas as pd
