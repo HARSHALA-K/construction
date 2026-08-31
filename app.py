@@ -1,6 +1,4 @@
 import streamlit as st
-import importlib.util
-st.write("LiteLLM installed:", importlib.util.find_spec("litellm") is not None)
 import os
 import asyncio
 import pandas as pd
@@ -121,7 +119,7 @@ print("===============================")
 # ==========================================
 # Sidebar Navigation
 # ==========================================
-st.sidebar.image("assets/logo.png", use_container_width=True)
+st.sidebar.image("assets/logo.png", width="stretch")
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Chat", "Calculator", "Agents", "Feedback", "About"])
 
