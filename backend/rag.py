@@ -13,7 +13,7 @@ def answer_question(
     query: str,
     backend: str = "qdrant",
     history: List[Dict] = None,
-    web_results: str = None
+    web_results: List[Dict[str, Any]] = None
 ) -> Tuple[str, List[Dict[str, Any]]]:
 
     logger.info(f"Processing query: {query}")
@@ -29,9 +29,32 @@ def answer_question(
 
 
         if web_results:
+            web_text = []
+
+            for item in web_results:
+                title = item.get("title", "")
+                text = item.get("text", "")
+                url = item.get("url", "")
+
+                web_text.append(
+                    f"Title: {title}\n"
+                    f"Summary: {text}\n"
+                    f"URL: {url}"
+                )
+
+                # Add web result to source metadata
+                source_metadata.append({
+                    "chunk_id": None,
+                    "source_document": title,
+                    "category": "web",
+                    "timestamp": None,
+                    "text": text,
+                    "url": url
+                })
+
             context_chunks.append(
-                "LATEST WEB INFORMATION:\n"
-                + web_results
+                "LATEST WEB INFORMATION:\n\n"
+                + "\n\n".join(web_text)
             )
 
         # -----------------------------------------------------

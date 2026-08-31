@@ -3,10 +3,6 @@ import re
 def detect_intent(query, pending_intent=None):
     query = query.lower().strip()
 
-    # Continue an unfinished calculator conversation
-    if pending_intent in {"tile", "material", "project", "interior"}:
-        return pending_intent
-
     # Material price
     if (
         any(x in query for x in ["price", "rate", "latest price", "market price"])

@@ -31,13 +31,17 @@ def get_tile_estimate(
         room_length,
         room_width,
         tile_length,
-        tile_width
+        tile_width,
+        room_unit="ft",
+        tile_unit="mm"
 ):
     response = calculate_tiles_tool(
         room_length=room_length,
         room_width=room_width,
         tile_length=tile_length,
-        tile_width=tile_width
+        tile_width=tile_width,
+        room_unit=room_unit,
+        tile_unit=tile_unit
     )
 
     return response

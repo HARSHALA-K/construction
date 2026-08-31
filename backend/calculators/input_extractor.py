@@ -20,24 +20,6 @@ def _extract_numbers(text):
 # ============================================================
 
 def extract_tile_inputs(prompt):
-    """
-    Extract tile calculation inputs.
-
-    Example:
-    "How many tiles for a 20 x 15 ft room using
-     600 x 600 mm tiles?"
-
-    Returns:
-        {
-            "room_length": 20.0,
-            "room_width": 15.0,
-            "tile_length": 600.0,
-            "tile_width": 600.0,
-            "missing": [],
-            "complete": True
-        }
-    """
-
     prompt = prompt.lower()
 
     result = {
@@ -45,74 +27,41 @@ def extract_tile_inputs(prompt):
         "room_width": None,
         "tile_length": None,
         "tile_width": None,
+        "room_unit": None,
+        "tile_unit": None
     }
 
-    # --------------------------------------------------------
-    # Room dimensions
-    # --------------------------------------------------------
-
-    room_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*[x*]\s*"
+    # ---------------------------------------------------------
+    # Find dimension pairs WITH their units
+    # ---------------------------------------------------------
+    dimension_matches = re.findall(
+        r"(\d+(?:\.\d+)?)\s*[x×*]\s*"
         r"(\d+(?:\.\d+)?)\s*"
-        r"(?:ft|feet|foot)?\s*"
-        r"(?:room)?",
+        r"(mm|millimeters?|cm|centimeters?|m|meters?|ft|feet|foot)\b",
         prompt
     )
 
-    if room_match:
-        result["room_length"] = float(room_match.group(1))
-        result["room_width"] = float(room_match.group(2))
+    print("DEBUG TILE DIMENSION MATCHES:", dimension_matches)
 
-    # --------------------------------------------------------
-    # Tile dimensions
-    #
-    # Prefer dimensions followed by mm/cm.
-    # This prevents accidentally treating room dimensions
-    # as tile dimensions.
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
+    # ROOM
+    # ---------------------------------------------------------
+    if dimension_matches:
+        result["room_length"] = float(dimension_matches[0][0])
+        result["room_width"] = float(dimension_matches[0][1])
+        result["room_unit"] = dimension_matches[0][2]
 
-    tile_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*[x*]\s*"
-        r"(\d+(?:\.\d+)?)\s*"
-        r"(?:mm|millimeter|millimeters|cm|centimeter|centimeters)",
-        prompt
-    )
+    # ---------------------------------------------------------
+    # TILE
+    # ---------------------------------------------------------
+    if len(dimension_matches) >= 2:
+        result["tile_length"] = float(dimension_matches[1][0])
+        result["tile_width"] = float(dimension_matches[1][1])
+        result["tile_unit"] = dimension_matches[1][2]
 
-    if tile_match:
-        result["tile_length"] = float(tile_match.group(1))
-        result["tile_width"] = float(tile_match.group(2))
-
-    # --------------------------------------------------------
-    # Fallback:
-    # If no unit was written for tile dimensions,
-    # use the second dimension pair in the question.
-    #
-    # Example:
-    # "20 x 15 room with 600 x 600 tiles"
-    # --------------------------------------------------------
-
-    if (
-        result["tile_length"] is None
-        or result["tile_width"] is None
-    ):
-
-        dimension_matches = re.findall(
-            r"(\d+(?:\.\d+)?)\s*[x*]\s*"
-            r"(\d+(?:\.\d+)?)",
-            prompt
-        )
-
-        if len(dimension_matches) >= 2:
-
-            second_pair = dimension_matches[1]
-
-            result["tile_length"] = float(second_pair[0])
-            result["tile_width"] = float(second_pair[1])
-
-    # --------------------------------------------------------
+    # ---------------------------------------------------------
     # Missing fields
-    # --------------------------------------------------------
-
+    # ---------------------------------------------------------
     missing = [
         key
         for key, value in result.items()
@@ -122,13 +71,9 @@ def extract_tile_inputs(prompt):
     result["missing"] = missing
     result["complete"] = len(missing) == 0
 
+    print("DEBUG TILE FINAL EXTRACTION:", result)
+
     return result
-
-
-# ============================================================
-# MATERIAL INPUT EXTRACTOR
-# ============================================================
-
 # ============================================================
 # MATERIAL INPUT EXTRACTOR
 # ============================================================

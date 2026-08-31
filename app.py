@@ -19,6 +19,12 @@ from backend.embedding import load_embedding_model
 from backend.qdrant_db import connect_qdrant
 from backend.llm import initialize_llm
 from backend.rag import answer_question
+from backend.calculators.input_extractor import (
+    extract_tile_inputs,
+    extract_project_inputs,
+    extract_interior_inputs,
+    extract_material_inputs
+)
 # Import client functions
 from mcp_client.client import get_tile_estimate
 from mcp_client.client import get_material_estimate
@@ -124,33 +130,34 @@ page = st.sidebar.radio("Go to", ["Chat", "Calculator", "Agents", "Feedback", "A
 # -----------------------------------------
 # Display previous conversation
 # -----------------------------------------
-for msg in st.session_state.messages:
+if page == "Chat":
+    for msg in st.session_state.messages:
 
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-        if msg.get("sources"):
-            with st.expander("View Source Context"):
-                for idx, src in enumerate(msg["sources"]):
-                    st.markdown(
-                        f"**Chunk ID:** {src.get('chunk_id', 'N/A')}"
-                    )
-                    st.markdown(
-                        f"_{src.get('text', '')}_"
-                    )
-                    st.divider()
+            if msg.get("sources"):
+                with st.expander("View Source Context"):
+                    for idx, src in enumerate(msg["sources"]):
+                        st.markdown(
+                            f"**Chunk ID:** {src.get('chunk_id', 'N/A')}"
+                        )
+                        st.markdown(
+                            f"_{src.get('text', '')}_"
+                        )
+                        st.divider()
 
     # Chat Input
-with st.form("chat_form", clear_on_submit=True):
-    prompt = st.text_area(
-        "Ask a construction question...",
-        height=100,
-        placeholder="Type your construction question here..."
-    )
+    with st.form("chat_form", clear_on_submit=True):
+        prompt = st.text_area(
+            "Ask a construction question...",
+            height=100,
+            placeholder="Type your construction question here..."
+        )
 
-    submitted = st.form_submit_button("Send")
+        submitted = st.form_submit_button("Send")
 
-if submitted and prompt.strip():
+    if submitted and prompt.strip():
         # -----------------------------------------
         # Add user message to chat history
         # -----------------------------------------
@@ -219,16 +226,31 @@ if submitted and prompt.strip():
 
                         if pending_intent:
 
-                            # Keep the previous calculator
-                            intent = pending_intent
+                            # First check whether the NEW prompt clearly starts
+                            # a different calculator/intention.
+                            new_intent = detect_intent(prompt)
 
-                            data = pending_data
+                            print("DEBUG NEW INTENT:", new_intent)
+                            print("DEBUG PREVIOUS INTENT:", pending_intent)
 
-                            print(
-                                "DEBUG USING PENDING INTENT:",
-                                intent
-                            )
+                            if new_intent and new_intent != pending_intent:
+                                # User has started a new type of calculation.
+                                # Do NOT continue the previous calculator conversation.
+                                intent = new_intent
+                                data = {}
 
+                                st.session_state.pending_intent = new_intent
+                                st.session_state.pending_data = {}
+
+                                print("DEBUG SWITCHING TO NEW INTENT:", intent)
+
+                            else:
+                                # No new intent detected.
+                                # Continue the previous calculator conversation.
+                                intent = pending_intent
+                                data = pending_data
+
+                                print("DEBUG CONTINUING PENDING INTENT:", intent)
                         # =====================================================
                         # 4. TILE CALCULATOR
                         # =====================================================
@@ -289,24 +311,34 @@ if submitted and prompt.strip():
                             # -------------------------------------------------
 
                             if not missing:
+                                print("DEBUG TILE CALLING CALCULATOR")
+                                print("DEBUG TILE DATA SENT:", data)
+                                print("DEBUG TILE APP DATA:", data)
+                                print("DEBUG TILE ROOM UNIT:", data.get("room_unit"))
+                                print("DEBUG TILE TILE UNIT:", data.get("tile_unit"))
 
                                 result = get_tile_estimate(
-                                    data["room_length"],
-                                    data["room_width"],
-                                    data["tile_length"],
-                                    data["tile_width"]
+                                    room_length=data["room_length"],
+                                    room_width=data["room_width"],
+                                    tile_length=data["tile_length"],
+                                    tile_width=data["tile_width"],
+                                    room_unit=data.get("room_unit", "ft"),
+                                    tile_unit=data.get("tile_unit", "mm")
                                 )
+                                print("DEBUG TILE APP RESULT:", result)
+                                print("DEBUG TILE RESULT TYPE:", type(result))
+                                print("DEBUG TILE CALCULATION RESULT:", result)
 
                                 answer = f"""
-                        ### Tile Estimation
+                                ### Tile Estimation
 
-                        For a **{data["room_length"]:.0f} × {data["room_width"]:.0f} ft room**
-                        using **{data["tile_length"]:.0f} × {data["tile_width"]:.0f} mm tiles**:
+                                For a **{data["room_length"]:.2f} × {data["room_width"]:.2f} {data.get("room_unit", "ft")} room**
+                                using **{data["tile_length"]:.2f} × {data["tile_width"]:.2f} {data.get("tile_unit", "mm")} tiles**:
 
-                        **Estimated tiles required: {result}**
+                                **Estimated tiles required: {result}**
 
-                        Includes **10% wastage allowance**.
-                        """
+                                Includes **10% wastage allowance**.
+                                """
 
                                 # Clear calculator conversation
                                 st.session_state.pending_intent = None
@@ -335,8 +367,8 @@ if submitted and prompt.strip():
 
                         elif intent == "material":
 
-                            if pending_intent:
-                                data = pending_data
+                            if pending_intent == "material":
+                                data = pending_data.copy()
                             else:
                                 data = {}
 
@@ -453,8 +485,8 @@ Estimated material requirement:
 
                         elif intent == "project":
 
-                            if pending_intent:
-                                data = pending_data
+                            if pending_intent == "project":
+                                data = pending_data.copy()
                             else:
                                 data = {}
 
@@ -528,8 +560,8 @@ Estimated material requirement:
 
                         elif intent == "interior":
 
-                            if pending_intent:
-                                data = pending_data
+                            if pending_intent == "interior":
+                                data = pending_data.copy()
                             else:
                                 data = {}
 
@@ -593,6 +625,11 @@ Estimated material requirement:
                        
                         else:
                             web_results = []
+                            try:
+                                web_results = route_query(prompt)
+                                print("DEBUG WEB RESULTS:", web_results)
+                            except Exception as e:
+                                print("DEBUG WEB SEARCH ERROR:", e)
                             answer, sources = answer_question(
                                 prompt,
                                 backend="qdrant",
@@ -613,8 +650,37 @@ Estimated material requirement:
                         if sources:
                             with st.expander("View Source Context"):
                                 for idx, src in enumerate(sources):
-                                    st.markdown(f"**Chunk ID:** {src.get('chunk_id')}")
-                                    st.markdown(f"_{src.get('text')}_")
+                                    if src.get("category") == "web":
+
+                                        st.markdown("### 🌐 Web Source")
+
+                                        st.markdown(
+                                            f"**Title:** {src.get('source_document', 'Web Result')}"
+                                        )
+
+                                        st.markdown(
+                                            f"**URL:** {src.get('url', '')}"
+                                        )
+
+                                        st.markdown(
+                                            f"_{src.get('text', '')}_"
+                                        )
+
+                                    else:
+
+                                        st.markdown("### 📚 Knowledge Base Source")
+
+                                        st.markdown(
+                                            f"**Chunk ID:** {src.get('chunk_id')}"
+                                        )
+
+                                        st.markdown(
+                                            f"**Document:** {src.get('source_document', '')}"
+                                        )
+
+                                        st.markdown(
+                                            f"_{src.get('text', '')}_"
+                                        )
                                     st.divider()
                                     
                         
