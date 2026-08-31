@@ -8,6 +8,7 @@ groq
 torch
 pandas
 python-dotenv
+litellm
 crewai
 autogen-agentchat
 autogen-ext
