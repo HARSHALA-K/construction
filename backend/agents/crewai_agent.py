@@ -4,6 +4,14 @@ import crewai.llms.cache as _crewai_cache
 _crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
 import os
+import litellm
+import crewai
+
+print("===== CREWAI DIAGNOSTICS =====")
+print("CrewAI version:", crewai.__version__)
+print("LiteLLM version:", litellm.__version__)
+print("LiteLLM location:", litellm.__file__)
+print("==============================")
 from crewai import Agent, Crew, Process, Task, LLM
 from dotenv import load_dotenv
 
