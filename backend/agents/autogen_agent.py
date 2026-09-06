@@ -106,7 +106,7 @@ def create_model_client():
 
     model_name = os.getenv(
         "AUTOGEN_MODEL",
-        "openai/gpt-oss-120b"
+        "openai/gpt-oss-20b"
     )
 
     model_client = OpenAIChatCompletionClient(
@@ -401,9 +401,9 @@ If information is missing, clearly ask for it.
 
 Never fabricate construction facts.
 
-"""
+""",
+        reflect_on_tool_use=True,
     )
-
     return agent, model_client
 
 
