@@ -4,14 +4,13 @@ openai-whisper
 sentence-transformers
 langchain_text_splitters
 qdrant-client
-groq
 torch
 torchvision
 pandas
-python-dotenv
 crewai[litellm]
 litellm
 crewai
+groq
 autogen-agentchat
 autogen-ext
 mcp
