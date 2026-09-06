@@ -9,7 +9,6 @@ torchvision
 pandas
 crewai[litellm]
 litellm
-crewai
 groq
 autogen-agentchat
 autogen-ext
