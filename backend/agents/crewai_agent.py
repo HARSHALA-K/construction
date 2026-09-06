@@ -84,7 +84,7 @@ def create_construction_crew(query: str, rag_context: str):
     # in your existing Construction AI Assistant.
     model_name = os.getenv(
         "CREWAI_MODEL",
-        "groq/openai/gpt-oss-120b"
+        "groq/openai/gpt-oss-20b"
     )
 
     llm = LLM(
