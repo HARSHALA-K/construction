@@ -4,12 +4,21 @@ import crewai.llms.cache as _crewai_cache
 _crewai_cache.mark_cache_breakpoint = lambda msg: msg
 
 import os
-from importlib.metadata import version, PackageNotFoundError
+import importlib.util
+from importlib.metadata import version
+
+print("========== CREWAI DEBUG ==========")
+
+print("CrewAI version:", version("crewai"))
+print("LiteLLM version:", version("litellm"))
+print("LiteLLM spec:", importlib.util.find_spec("litellm"))
 
 try:
-    print("LiteLLM version:", version("litellm"))
-except PackageNotFoundError:
-    print("LITELLM NOT INSTALLED")
+    import litellm
+    print("LiteLLM import:", litellm)
+    print("LiteLLM module path:", litellm.__file__)
+except Exception as e:
+    print("LiteLLM IMPORT ERROR:", repr(e))
 from crewai import Agent, Crew, Process, Task, LLM
 from dotenv import load_dotenv
 
